@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 import flask_login
 
 from flask import Blueprint, render_template, request, redirect, url_for, current_app
@@ -148,8 +150,36 @@ def api_foo():
     return {'foo': 'bar-protected'}
 
 
-@bp.route('/api/all-sessions')
+@bp.route('/api/messages-by-day')
 @flask_login.login_required
 def api_list_sessions():
     logs_coll: Collection = current_app.logs_coll
-    return {'foo': 'bar-protected'}
+    r = logs_coll.aggregate([
+        {'$match': {
+            'from_user': True,
+        }},
+        {"$group": {
+            "_id": {
+                "year": {
+                    "$substr": ["$timestamp", 0, 4]
+                },
+                "month": {
+                    "$substr": ["$timestamp", 5, 2]
+                },
+                "day": {
+                    "$substr": ["$timestamp", 8, 2]
+                }
+            },
+            'count': {'$sum': 1}
+        }},
+        {"$sort": OrderedDict([('_id.year', 1), ('_id.month', 1), ('_id.day', 1)])},
+    ])
+    indexes = []
+    values = []
+    for item in r:
+        indexes.append('-'.join([item['_id']['year'], item['_id']['month'], item['_id']['day']]))
+        values.append(item['count'])
+    return {
+        'indexes': indexes,
+        'values': values,
+    }
