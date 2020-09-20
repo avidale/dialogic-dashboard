@@ -31,6 +31,36 @@ def find_sessions(logs_coll: Collection, page=0, page_size=15, filters=None):
     return sessions
 
 
+def find_messages(logs_coll: Collection, page=0, page_size=1000, filters=None):
+    match = {}
+    if filters:
+        match.update(filters)
+    agg = logs_coll.aggregate([
+        {'$match': match},
+        {'$lookup': {
+            'from': 'message_logs',
+            'let': {'req_id': '$request_id'},
+            'pipeline': [{'$match': {
+                '$expr':
+                    {'$and':
+                        [
+                            {'$eq': ["$request_id", "$$req_id"]},
+                            {'$eq': ["$from_user", False]}
+                        ]
+                    }
+                }
+            }],
+            'as': 'response'
+        }},
+        {"$sort": {'timestamp': -1}},
+        {'$skip': page * page_size},
+        {'$limit': page_size},
+        {"$sort": {'timestamp': 1}},
+    ])
+    messages = list(agg)
+    return messages
+
+
 def find_users(logs_coll: Collection, page=0, page_size=15, filters=None):
     match = {'user_id': {"$exists": True}, 'from_user': True}
     if filters:
@@ -79,28 +109,7 @@ def list_users():
 @flask_login.login_required
 def show_session(session_id):
     logs_coll: Collection = current_app.logs_coll
-    agg = logs_coll.aggregate([
-        {'$match': {'data.session.session_id': session_id, 'from_user': True}},
-        {'$lookup': {
-            'from': 'message_logs',
-            'let': {'reqid': '$request_id'},
-            'pipeline': [{'$match':
-                 { '$expr':
-                    { '$and':
-                       [
-                         { '$eq': [ "$request_id",  "$$reqid" ] },
-                         { '$eq': [ "$from_user", False ] }
-                       ]
-                    }
-                 }
-            }],
-            #'localField': 'request_id',
-            #'foreignField': 'request_id',
-            'as': 'response'
-        }},
-        {"$sort": {'timestamp': 1}},
-    ])
-    messages = list(agg)
+    messages = find_messages(logs_coll=logs_coll, filters={'data.session.session_id': session_id, 'from_user': True})
     if not messages:
         return f'Session "{session_id}" not found', 404
     return render_template('session.html', messages=messages, session=messages[0])
@@ -112,6 +121,25 @@ def show_user(user_id):
     logs_coll: Collection = current_app.logs_coll
     sessions = find_sessions(logs_coll=logs_coll, page=0, page_size=100500, filters={'user_id': user_id})
     return render_template('user.html', sessions=sessions, user_id=user_id)
+
+
+@bp.route('/search', methods=['GET', 'POST'])
+@flask_login.login_required
+def search_text():
+    logs_coll: Collection = current_app.logs_coll
+    print(request)
+    print(request.form)
+    print(request.method)
+    print(request.__dict__)
+    print(request.args)
+    query = ''
+    if request.args and request.args.get('query'):
+        query = request.args['query']
+    if query:
+        messages = find_messages(logs_coll=logs_coll, filters={'$text': {'$search': query}, 'from_user': True})
+    else:
+        messages = []
+    return render_template('search.html', messages=messages, query=query)
 
 
 @bp.route('/api/foo')

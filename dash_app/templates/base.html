@@ -21,6 +21,12 @@
         <li><a href="{{ url_for('main.list_sessions') }}">Sessions</a></li>
         <li><a href="{{ url_for('main.list_users') }}">Users</a></li>
       </ul>
+      <form class="navbar-form navbar-left" action="{{ url_for('main.search_text') }}" method="GET">
+        <div class="form-group">
+          <input type="text" class="form-control" placeholder="Search" name="query">
+        </div>
+        <button type="submit" class="btn btn-default">Search</button>
+      </form>
 
       <ul class="nav navbar-nav navbar-right">
         <li><a href="{{ url_for('auth.logout') }}">Logout</a></li>

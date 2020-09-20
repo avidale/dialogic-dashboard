@@ -1,5 +1,12 @@
-<form action='login' method='POST'>
+{% extends "bootstrap/base.html" %}
+{% block title %}Login to the LogViewer{% endblock %}
+
+{% block content %}
+  <h2> You need to log in to access the LogViewer</h2>
+  <form action='login' method='POST'>
     <input type='text' name='username' id='username' placeholder='username'/>
     <input type='password' name='password' id='password' placeholder='password'/>
     <input type='submit' name='submit'/>
-</form>
+  </form>
+{% endblock %}
+

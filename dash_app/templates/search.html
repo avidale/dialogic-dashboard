@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+
+{% block title %} Search logs {% endblock %}
+
+{% block content %}
+    <h3>Search by {{ query or 'empty query' }}</h3>
+    {% if messages %}
+    <table class="table">
+      <thead>
+      <tr>
+          <th>Request</th>
+          <th>Response text</th>
+          <th>Time</th>
+          <th>Meta</th>
+      </tr>
+      </thead>
+      <tbody>
+      {% for item in messages %}
+      <tr>
+          <td>{{item.text}}</td>
+          <td>{{item.response[0].text}}</td>
+          <td>{{item.timestamp}}</td>
+          <td>
+              <a href="{{ url_for('main.show_session', session_id=item['data']['session']['session_id']) }}">session</a>
+              <a href="{{ url_for('main.show_user', user_id=item['user_id']) }}">user</a>
+          </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+        <div>
+        {% if query %}
+            Ничего не нашлось
+        {% else %}
+            Введите поисковый запрос в поле <code>Search</code> наверху
+        {% endif %}
+        </div>
+    {% endif %}
+{% endblock %}
