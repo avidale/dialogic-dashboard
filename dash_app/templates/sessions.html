@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+
+
+{% block title %}Latest sessions{% endblock %}
+
+{% block content %}
+    <h1>Latest sessions</h1>
+    <table class="table">
+      <thead>
+      <tr>
+          <th>Session id</th>
+          <th>Session size</th>
+          <th>Time of last message</th>
+      </tr>
+      </thead>
+      <tbody>
+      {% for item in sessions %}
+      <tr>
+          <td><a href="{{ url_for('main.show_session', session_id=item['_id']) }}">{{item._id}}</a></td>
+          <td>{{item.len}}</td>
+          <td>{{item.latest}}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% if prev_url %}
+        <a href="{{ prev_url }}">Newer</a>
+    {% endif %}
+    Page {{ page }}
+    {% if next_url %}
+        <a href="{{ next_url }}">Older</a>
+    {% endif %}
+{% endblock %}

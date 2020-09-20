@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+
+
+{% block title %}User sessions{% endblock %}
+
+{% block content %}
+    <h2>User sessions </h2>
+    <ul>
+        <li>User id: <code>{{ user_id }}</code> </li>
+    </ul>
+    <table class="table">
+      <thead>
+      <tr>
+          <th>Session id</th>
+          <th>Session size</th>
+          <th>Time of last message</th>
+      </tr>
+      </thead>
+      <tbody>
+      {% for item in sessions %}
+      <tr>
+          <td><a href="{{ url_for('main.show_session', session_id=item['_id']) }}">{{item._id}}</a></td>
+          <td>{{item.len}}</td>
+          <td>{{item.latest}}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+{% endblock %}

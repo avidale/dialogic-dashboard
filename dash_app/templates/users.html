@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+
+
+{% block title %}Latest sessions{% endblock %}
+
+{% block content %}
+    <h1>Users</h1>
+    <table class="table">
+      <thead>
+      <tr>
+          <th>User id</th>
+          <th>Messages</th>
+          <th>First message</th>
+          <th>Last message</th>
+      </tr>
+      </thead>
+      <tbody>
+      {% for item in users %}
+      <tr>
+          <td><a href="{{ url_for('main.show_user', user_id=item['_id']) }}">{{item._id}}</a></td>
+          <td>{{item.messages}}</td>
+          <td>{{item.first_time}}</td>
+          <td>{{item.last_time}}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% if prev_url %}
+        <a href="{{ prev_url }}">Newer</a>
+    {% endif %}
+    Page {{ page }}
+    {% if next_url %}
+        <a href="{{ next_url }}">Older</a>
+    {% endif %}
+{% endblock %}

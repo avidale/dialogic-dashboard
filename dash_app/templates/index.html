@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block scripts %}
+    {{super()}}
+    <script>
+        function set_kek(text) {
+          alert(text)
+          $('#kek').text(text)
+        }
+        function respond() {
+            $.get('/api/foo'
+            ).done(function(response) {
+                set_kek(response["foo"])
+            }).fail(function() {
+                set_kek("could not call api")
+            });
+        }
+    </script>
+{% endblock %}
+
+
+{% block title %}Main page{% endblock %}
+
+{% block content %}
+  <h1>LogViewer</h1>
+  <div>
+    This is the main page for Alice skill logviewer.
+  </div>
+{% endblock %}
