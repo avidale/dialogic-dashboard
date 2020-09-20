@@ -129,11 +129,6 @@ def show_user(user_id):
 @flask_login.login_required
 def search_text():
     logs_coll: Collection = current_app.logs_coll
-    print(request)
-    print(request.form)
-    print(request.method)
-    print(request.__dict__)
-    print(request.args)
     query = ''
     if request.args and request.args.get('query'):
         query = request.args['query']
@@ -142,12 +137,6 @@ def search_text():
     else:
         messages = []
     return render_template('search.html', messages=messages, query=query)
-
-
-@bp.route('/api/foo')
-@flask_login.login_required
-def api_foo():
-    return {'foo': 'bar-protected'}
 
 
 @bp.route('/api/messages-by-day')
