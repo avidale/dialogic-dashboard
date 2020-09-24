@@ -60,6 +60,8 @@ def find_messages(logs_coll: Collection, page=0, page_size=1000, filters=None):
         {"$sort": {'timestamp': 1}},
     ])
     messages = list(agg)
+    for m in messages:
+        m['response_text'] = m['response'][0]['text'] if m['response'] and m['response'][0].get('text') else None
     return messages
 
 

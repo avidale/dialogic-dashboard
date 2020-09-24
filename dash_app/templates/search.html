@@ -19,7 +19,7 @@
       {% for item in messages %}
       <tr>
           <td>{{item.text}}</td>
-          <td>{{item.response[0].text}}</td>
+          <td>{{item.response_text}}</td>
           <td>{{item.timestamp}}</td>
           <td>
               <a href="{{ url_for('main.show_session', session_id=item['data']['session']['session_id']) }}">session</a>
