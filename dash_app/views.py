@@ -81,8 +81,7 @@ def find_users(logs_coll: Collection, page=0, page_size=15, filters=None):
         {'$skip': page * page_size},
         {'$limit': page_size},
     ])
-    sessions = list(agg)
-    return sessions
+    return list(agg)
 
 
 @bp.route('/sessions')
