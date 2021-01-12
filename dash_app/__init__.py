@@ -11,7 +11,8 @@ login_manager = flask_login.LoginManager()
 
 def load_logs():
     db = pymongo.MongoClient(os.getenv('MONGODB_URI')).get_default_database()
-    logs_coll = db.get_collection('message_logs')
+    coll_name = os.getenv('LOGS_COLLECTION', 'message_logs')
+    logs_coll = db.get_collection(coll_name)
     logs_coll.create_index([('text', 'text')], default_language='russian')
     return logs_coll
 

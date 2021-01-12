@@ -40,7 +40,7 @@ def find_messages(logs_coll: Collection, page=0, page_size=1000, filters=None):
     agg = logs_coll.aggregate([
         {'$match': match},
         {'$lookup': {
-            'from': 'message_logs',
+            'from': logs_coll.name,
             'let': {'req_id': '$request_id'},
             'pipeline': [{'$match': {
                 '$expr':
@@ -116,6 +116,22 @@ def show_session(session_id):
     if not messages:
         return f'Session "{session_id}" not found', 404
     return render_template('session.html', messages=messages, session=messages[0])
+
+
+@bp.route('/session/random')
+@flask_login.login_required
+def random_session():
+    logs_coll: Collection = current_app.logs_coll
+    sampled = list(logs_coll.aggregate(
+       [
+           {'$match': {'from_user': True}},
+           {'$sample': {'size': 1}},
+       ]
+    ))
+    if sampled:
+        session_id = sampled[0]['data']['session']['session_id']
+        return show_session(session_id=session_id)
+    return list_sessions()
 
 
 @bp.route('/user/<user_id>')
