@@ -189,3 +189,46 @@ def api_list_sessions():
         'indexes': indexes,
         'values': values,
     }
+
+@bp.route('/api/users-by-day')
+@flask_login.login_required
+def api_list_users():
+    logs_coll: Collection = current_app.logs_coll
+    r = logs_coll.aggregate([
+        {'$match': {
+            'from_user': True,
+        }},
+        {"$group": {
+            "_id": {
+                "year": {
+                    "$substr": ["$timestamp", 0, 4]
+                },
+                "month": {
+                    "$substr": ["$timestamp", 5, 2]
+                },
+                "day": {
+                    "$substr": ["$timestamp", 8, 2]
+                },
+                'user_id': '$user_id',
+            },
+            'count': {'$sum': 1}
+        }},
+        {"$group": {
+            "_id": {
+                "year": '$_id.year',
+                "month": '$_id.month',
+                "day": '$_id.day',
+            },
+            'count': {'$sum': 1}
+        }},
+        {"$sort": OrderedDict([('_id.year', 1), ('_id.month', 1), ('_id.day', 1)])},
+    ])
+    indexes = []
+    values = []
+    for item in r:
+        indexes.append('-'.join([item['_id']['year'], item['_id']['month'], item['_id']['day']]))
+        values.append(item['count'])
+    return {
+        'indexes': indexes,
+        'values': values,
+    }
