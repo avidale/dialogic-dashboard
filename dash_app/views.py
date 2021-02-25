@@ -2,16 +2,44 @@ from collections import OrderedDict
 
 import flask_login
 
-from flask import Blueprint, render_template, request, redirect, url_for, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, current_app, make_response, g
+from flask_login import current_user
 from pymongo.collection import Collection
 
 bp = Blueprint('main', __name__)
 
 
+def get_current_coll(app, user=None, coll_name=None):
+    if coll_name:
+        return coll_name
+    with app.app_context():
+        if hasattr(g, 'current_coll') and g.current_coll:
+            return g.current_coll
+    cookied = request.cookies.get('current_coll')
+    if cookied and cookied in app.logs_map:
+        coll_name = cookied
+    elif hasattr(app, 'default_coll') and app.default_coll is not None:
+        coll_name = app.default_coll
+    return coll_name
+
+
+def get_logs_coll(app, user=None, coll_name=None):
+    coll_name = get_current_coll(app=app, user=user, coll_name=coll_name)
+    if not coll_name or coll_name not in app.logs_map:
+        return
+    return app.logs_map[coll_name]
+
+
 @bp.route('/')
+@bp.route('/app/<coll_name>')
 @flask_login.login_required
-def index():
-    return render_template('index.html')
+def index(coll_name=None):
+    if coll_name:
+        g.current_coll = coll_name
+    resp = make_response(render_template('index.html', cc=coll_name))
+    if coll_name:
+        resp.set_cookie('current_coll', coll_name)
+    return resp
 
 
 def find_sessions(logs_coll: Collection, page=0, page_size=15, filters=None):
@@ -85,9 +113,10 @@ def find_users(logs_coll: Collection, page=0, page_size=15, filters=None):
 
 
 @bp.route('/sessions')
+@bp.route('/<coll_name>/sessions')
 @flask_login.login_required
-def list_sessions():
-    logs_coll: Collection = current_app.logs_coll
+def list_sessions(coll_name=None):
+    logs_coll: Collection = get_logs_coll(current_app, current_user, coll_name=coll_name)
     page = int(request.args.get('page', 0))
     page_size = int(request.args.get('page_size', 15))
     sessions = find_sessions(logs_coll=logs_coll, page=page, page_size=page_size)
@@ -97,9 +126,10 @@ def list_sessions():
 
 
 @bp.route('/users')
+@bp.route('/<coll_name>/users')
 @flask_login.login_required
-def list_users():
-    logs_coll: Collection = current_app.logs_coll
+def list_users(coll_name=None):
+    logs_coll: Collection = get_logs_coll(current_app, current_user, coll_name=coll_name)
     page = int(request.args.get('page', 0))
     page_size = int(request.args.get('page_size', 15))
     users = find_users(logs_coll=logs_coll, page=page, page_size=page_size)
@@ -109,9 +139,10 @@ def list_users():
 
 
 @bp.route('/session/<session_id>')
+@bp.route('/<coll_name>/session/<session_id>')
 @flask_login.login_required
-def show_session(session_id):
-    logs_coll: Collection = current_app.logs_coll
+def show_session(session_id, coll_name=None):
+    logs_coll: Collection = get_logs_coll(current_app, current_user, coll_name=coll_name)
     messages = find_messages(logs_coll=logs_coll, filters={'data.session.session_id': session_id, 'from_user': True})
     if not messages:
         return f'Session "{session_id}" not found', 404
@@ -119,9 +150,10 @@ def show_session(session_id):
 
 
 @bp.route('/session/random')
+@bp.route('/<coll_name>/session/random')
 @flask_login.login_required
-def random_session():
-    logs_coll: Collection = current_app.logs_coll
+def random_session(coll_name=None):
+    logs_coll: Collection = get_logs_coll(current_app, current_user, coll_name=coll_name)
     sampled = list(logs_coll.aggregate(
        [
            {'$match': {'from_user': True}},
@@ -135,17 +167,19 @@ def random_session():
 
 
 @bp.route('/user/<user_id>')
+@bp.route('/<coll_name>/user/<user_id>')
 @flask_login.login_required
-def show_user(user_id):
-    logs_coll: Collection = current_app.logs_coll
+def show_user(user_id, coll_name=None):
+    logs_coll: Collection = get_logs_coll(current_app, current_user, coll_name=coll_name)
     sessions = find_sessions(logs_coll=logs_coll, page=0, page_size=100500, filters={'user_id': user_id})
     return render_template('user.html', sessions=sessions, user_id=user_id)
 
 
 @bp.route('/search', methods=['GET', 'POST'])
+@bp.route('/<coll_name>/search', methods=['GET', 'POST'])
 @flask_login.login_required
-def search_text():
-    logs_coll: Collection = current_app.logs_coll
+def search_text(coll_name=None):
+    logs_coll: Collection = get_logs_coll(current_app, current_user, coll_name=coll_name)
     query = ''
     if request.args and request.args.get('query'):
         query = request.args['query']
@@ -157,9 +191,10 @@ def search_text():
 
 
 @bp.route('/api/messages-by-day')
+@bp.route('/api/<coll_name>/messages-by-day')
 @flask_login.login_required
-def api_list_sessions():
-    logs_coll: Collection = current_app.logs_coll
+def api_list_sessions(coll_name=None):
+    logs_coll: Collection = get_logs_coll(current_app, current_user, coll_name=coll_name)
     r = logs_coll.aggregate([
         {'$match': {
             'from_user': True,
@@ -190,10 +225,12 @@ def api_list_sessions():
         'values': values,
     }
 
+
 @bp.route('/api/users-by-day')
+@bp.route('/api/<coll_name>/users-by-day')
 @flask_login.login_required
-def api_list_users():
-    logs_coll: Collection = current_app.logs_coll
+def api_list_users(coll_name=None):
+    logs_coll: Collection = get_logs_coll(current_app, current_user, coll_name=coll_name)
     r = logs_coll.aggregate([
         {'$match': {
             'from_user': True,

@@ -13,7 +13,9 @@
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="/">LogViewer</a>
+      <a class="navbar-brand" href="/">
+        LogViewer{% if current_coll %} @ {{g.current_coll or current_coll}} {% endif %}
+      </a>
     </div>
     <!-- Collect the nav links, forms, and other content for toggling -->
     <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
@@ -21,6 +23,16 @@
         <li><a href="{{ url_for('main.list_sessions') }}">Sessions</a></li>
         <li><a href="{{ url_for('main.list_users') }}">Users</a></li>
         <li><a href="{{ url_for('main.random_session') }}">Random</a></li>
+        {% if configs %}
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Choose app <span class="caret"></span></a>
+            <ul class="dropdown-menu" role="menu">
+              {% for k, v in configs.items() %}
+                <li><a class="dropdown-item" href="/app/{{k}}">{{ k }}</a></li>
+              {% endfor %}
+            </ul>
+          </li>
+        {% endif %}
       </ul>
       <form class="navbar-form navbar-left" action="{{ url_for('main.search_text') }}" method="GET">
         <div class="form-group">
@@ -28,7 +40,6 @@
         </div>
         <button type="submit" class="btn btn-default">Search</button>
       </form>
-
       <ul class="nav navbar-nav navbar-right">
         <li><a href="{{ url_for('auth.logout') }}">Logout</a></li>
       </ul>
