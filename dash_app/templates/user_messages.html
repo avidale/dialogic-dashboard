@@ -2,15 +2,13 @@
 
 
 
-{% block title %} View session {% endblock %}
+{% block title %} View user messages {% endblock %}
 
 {% block content %}
     <h1>View session</h1>
     <div>
-        Session <code>{{ session_id }}</code>:
         <ul>
-            <li>User: <a href="{{url_for('main.show_user', user_id=session['user_id'])}}">{{ user_id }}</a></li>
-            <li>Device: <code>{{ device }}</code></li>
+            <li>User: <a href="{{url_for('main.show_user', user_id=user_id)}}">{{user_id}}</a></li>
         </ul>
     </div>
     <table class="table">

@@ -43,13 +43,20 @@ def index(coll_name=None):
 
 
 def find_sessions(logs_coll: Collection, page=0, page_size=15, filters=None):
-    match = {'data.session.session_id': {"$exists": True}}
+    match = {'$or': [{'data.session.session_id': {"$exists": True}}, {'session_id': {"$exists": True}}]}
     if filters:
         match.update(filters)
+    complex_id = {  # https://stackoverflow.com/questions/36795528/
+        "$cond": [
+            {"$gt": ["$session_id", None]},
+            "$session_id",
+            "$data.session.session_id",
+        ]
+    }
     agg = logs_coll.aggregate([
         {'$match': match},
         {"$group": {
-            "_id": "$data.session.session_id",
+            "_id": complex_id,
             "latest": {"$max": '$timestamp'},
             'len': {'$sum': 1}
         }},
@@ -143,10 +150,17 @@ def list_users(coll_name=None):
 @flask_login.login_required
 def show_session(session_id, coll_name=None):
     logs_coll: Collection = get_logs_coll(current_app, current_user, coll_name=coll_name)
-    messages = find_messages(logs_coll=logs_coll, filters={'data.session.session_id': session_id, 'from_user': True})
+    messages = find_messages(logs_coll=logs_coll, filters={
+        '$or': [{'data.session.session_id': session_id}, {'session_id': session_id}],
+        'from_user': True
+    })
     if not messages:
         return f'Session "{session_id}" not found', 404
-    return render_template('session.html', messages=messages, session=messages[0])
+    sess = messages[0]
+    device = sess.get('data', {}).get('meta', {}).get('client_id')
+    return render_template(
+        'session.html', messages=messages, session_id=session_id, device=device, user_id=sess['user_id']
+    )
 
 
 @bp.route('/session/random')
@@ -161,8 +175,12 @@ def random_session(coll_name=None):
        ]
     ))
     if sampled:
-        session_id = sampled[0]['data']['session']['session_id']
-        return show_session(session_id=session_id)
+        # todo: fix the case when session is not marked in an alice-like way
+        session_id = sampled[0].get('data', {}).get('session', {}).get('session_id') or sampled[0].get('session_id')
+        if session_id is not None:
+            return show_session(session_id=session_id)
+        uid = sampled[0].get('user_id')
+        return show_user(user_id=uid)
     return list_sessions()
 
 
@@ -173,6 +191,17 @@ def show_user(user_id, coll_name=None):
     logs_coll: Collection = get_logs_coll(current_app, current_user, coll_name=coll_name)
     sessions = find_sessions(logs_coll=logs_coll, page=0, page_size=100500, filters={'user_id': user_id})
     return render_template('user.html', sessions=sessions, user_id=user_id)
+
+
+@bp.route('/user_messages/<user_id>')
+@bp.route('/<coll_name>/user_messages/<user_id>')
+@flask_login.login_required
+def show_user_messages(user_id, coll_name=None):
+    logs_coll: Collection = get_logs_coll(current_app, current_user, coll_name=coll_name)
+    messages = find_messages(logs_coll=logs_coll, filters={'user_id': user_id, 'from_user': True})
+    if not messages:
+        return f'User "{user_id}" not found', 404
+    return render_template('user_messages.html', messages=messages, user_id=user_id)
 
 
 @bp.route('/search', methods=['GET', 'POST'])

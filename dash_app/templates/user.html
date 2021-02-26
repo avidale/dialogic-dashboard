@@ -8,6 +8,7 @@
     <h2>User sessions </h2>
     <ul>
         <li>User id: <code>{{ user_id }}</code> </li>
+        <li><a href="{{ url_for('main.show_user_messages', user_id=user_id )}}">all messages by user</a></li>
     </ul>
     <table class="table">
       <thead>
