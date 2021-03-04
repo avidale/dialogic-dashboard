@@ -28,4 +28,9 @@ setuptools.setup(
         'pymongo',
         'attrs',
     ],
+    entry_points={
+            "console_scripts": [
+                "dialogic_dashboard=dialogic_dashboard.__main__:main",
+        ]
+    },
 )

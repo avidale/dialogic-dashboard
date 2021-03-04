@@ -1,3 +1,4 @@
 .idea
 __pycache__/
 *.pyc
+dialogic_dashboard.egg-info/
