@@ -2,11 +2,11 @@ import flask_login
 import os
 import pymongo
 
-from flask import Flask, request
+from flask import Flask
 from flask_bootstrap import Bootstrap
 from flask_login import current_user
 
-from dash_app.app_config import AppConfig
+from .app_config import AppConfig
 
 login_manager = flask_login.LoginManager()
 
@@ -19,7 +19,7 @@ def load_logs(mongo_uri=None, logs_collection=None):
     return logs_coll
 
 
-def create_app(configs=None):
+def create_app(configs=None, mongodb_uri=None, collection_name=None):
     app = Flask(__name__)
     app.secret_key = os.getenv('APP_SECRET', 'doMino')
     Bootstrap(app)
@@ -35,8 +35,8 @@ def create_app(configs=None):
     if not configs:
         configs = {'default': {
             'name': 'default',
-            'database_uri': os.getenv('MONGODB_URI'),
-            'logs_collection_name': os.getenv('LOGS_COLLECTION', 'message_logs'),
+            'database_uri': mongodb_uri or os.getenv('MONGODB_URI'),
+            'logs_collection_name': collection_name or os.getenv('LOGS_COLLECTION', 'message_logs'),
         }}
 
     app.configs = {k: AppConfig(id=k, **v) for k, v in (configs or {}).items()}

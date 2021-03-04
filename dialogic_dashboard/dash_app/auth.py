@@ -1,9 +1,9 @@
 import flask_login
 import os
 
-from dash_app import login_manager
+from . import login_manager
 
-from flask import Blueprint, render_template, request, redirect, url_for, current_app
+from flask import Blueprint, render_template, request, redirect, url_for
 
 bp = Blueprint('auth', __name__)
 
