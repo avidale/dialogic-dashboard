@@ -21,7 +21,13 @@
       <tbody>
       {% for item in sessions %}
       <tr>
-          <td><a href="{{ url_for('main.show_session', session_id=item['_id']) }}">{{item._id}}</a></td>
+          <td>
+              {% if item._id %}
+                <a href="{{ url_for('main.show_session', session_id=item['_id']) }}">{{item._id}}</a>
+              {% else %}
+                [no session id]
+              {% endif %}
+          </td>
           <td>{{item.len}}</td>
           <td>{{item.latest}}</td>
       </tr>
