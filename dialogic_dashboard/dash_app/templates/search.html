@@ -12,6 +12,7 @@
           <th>Request</th>
           <th>Response text</th>
           <th>Time</th>
+          <th>Handler</th>
           <th>Meta</th>
       </tr>
       </thead>
@@ -21,6 +22,7 @@
           <td>{{item.text}}</td>
           <td>{{item.response_text}}</td>
           <td>{{item.timestamp}}</td>
+          <td><a href="{{ url_for('main.show_handler', handler_name=item.handler) }}">{{item.handler}}</a></td>
           <td>
               <a href="{{ url_for('main.show_session', session_id=item['data']['session']['session_id']) }}">session</a>
               <a href="{{ url_for('main.show_user', user_id=item['user_id']) }}">user</a>

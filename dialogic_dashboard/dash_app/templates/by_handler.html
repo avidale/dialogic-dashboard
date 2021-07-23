@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+
+
+{% block title %} View messages by handler {% endblock %}
+
+{% block content %}
+    <h1>View messages by hanlder <code>{{ handler_name }}</code></h1>
+    <div>
+        <a href="{{ url_for('main.list_handlers') }}">Look at other handlers</a>
+        <br>
+        <a href="{{ url_for('main.show_handler_unique', handler_name=handler_name) }}">Unique requests for handler</a>
+    </div>
+    <table class="table">
+      <thead>
+      <tr>
+          <th>Request</th>
+          <th>Response text</th>
+          <th>Time</th>
+          <th>Meta</th>
+      </tr>
+      </thead>
+      <tbody>
+      {% for item in messages %}
+      <tr>
+          <td>{{item.text}}</td>
+          <td>{{item.response_text}}</td>
+          <td>{{item.timestamp}}</td>
+          <td>
+              <a href="{{ url_for('main.show_session', session_id=item['session_id']) }}">session</a>
+              <a href="{{ url_for('main.show_user', user_id=item['user_id']) }}">user</a>
+          </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% if prev_url %}
+        <a href="{{ prev_url }}">Newer</a>
+    {% endif %}
+    Page {{ page }}
+    {% if next_url %}
+        <a href="{{ next_url }}">Older</a>
+    {% endif %}
+{% endblock %}

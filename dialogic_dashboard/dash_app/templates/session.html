@@ -19,6 +19,7 @@
           <th>Request</th>
           <th>Response text</th>
           <th>Time</th>
+          <th>Handler</th>
       </tr>
       </thead>
       <tbody>
@@ -27,6 +28,7 @@
           <td>{{item.text}}</td>
           <td>{{item.response_text}}</td>
           <td>{{item.timestamp}}</td>
+          <td><a href="{{ url_for('main.show_handler', handler_name=item.handler) }}">{{item.handler}}</a></td>
       </tr>
       {% endfor %}
       </tbody>

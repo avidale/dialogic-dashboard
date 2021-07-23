@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+
+
+{% block title %}All handlers{% endblock %}
+
+{% block content %}
+    <h1>All handlers</h1>
+    <table class="table">
+      <thead>
+      <tr>
+          <th>Handler name</th>
+          <th>Messages</th>
+          <th>Response example</th>
+          <th>Time of the first message</th>
+          <th>Time of the last message</th>
+      </tr>
+      </thead>
+      <tbody>
+      {% for item in handlers %}
+      <tr>
+          <td>
+              {% if item._id %}
+                <a href="{{ url_for('main.show_handler', handler_name=item['_id']) }}">{{item._id}}</a>
+              {% else %}
+                [no handler id]: {{item}}
+              {% endif %}
+          </td>
+          <td>{{item.messages}}</td>
+          <td>{{item.response_example}}</td>
+          <td>{{item.first_time}}</td>
+          <td>{{item.last_time}}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+{% endblock %}

@@ -68,35 +68,46 @@ def find_sessions(logs_coll: Collection, page=0, page_size=15, filters=None):
     return sessions
 
 
-def find_messages(logs_coll: Collection, page=0, page_size=1000, filters=None):
+def find_messages(logs_coll: Collection, page=0, page_size=1000, filters=None, time_sort=1, extra_pipe=None, get_pairs=True):
     match = {}
     if filters:
         match.update(filters)
-    agg = logs_coll.aggregate([
+    pipeline = [
         {'$match': match},
         {'$lookup': {
             'from': logs_coll.name,
-            'let': {'req_id': '$request_id'},
+            'let': {'req_id': '$request_id', 'fu': '$from_user'},
             'pipeline': [{'$match': {
                 '$expr':
                     {'$and':
                         [
                             {'$eq': ["$request_id", "$$req_id"]},
-                            {'$eq': ["$from_user", False]}
+                            {'$ne': ["$from_user", '$$fu']}
                         ]
                     }
-                }
+            }
             }],
-            'as': 'response'
+            'as': 'paired'
         }},
+        {'$unwind': '$paired'},
+    ]
+    if extra_pipe:
+        pipeline.extend(extra_pipe)
+    pipeline.extend([
         {"$sort": {'timestamp': -1}},
         {'$skip': page * page_size},
         {'$limit': page_size},
-        {"$sort": {'timestamp': 1}},
+        {"$sort": {'timestamp': time_sort}},
     ])
+    agg = logs_coll.aggregate(pipeline)
     messages = list(agg)
-    for m in messages:
-        m['response_text'] = m['response'][0]['text'] if m['response'] and m['response'][0].get('text') else None
+    if get_pairs:
+        for m in messages:
+            m['response_text'] = m['paired']['text'] if m.get('paired') and m['paired'].get('text') else None
+            if not m.get('from_user'):
+                m['response_text'], m['text'] = m['text'], m['response_text']
+            if not m.get('handler') and m['paired'].get('handler'):
+                m['handler'] = m['paired']['handler']
     return messages
 
 
@@ -115,6 +126,24 @@ def find_users(logs_coll: Collection, page=0, page_size=15, filters=None):
         {"$sort": {'last_time': -1}},
         {'$skip': page * page_size},
         {'$limit': page_size},
+    ])
+    return list(agg)
+
+
+def find_handlers(logs_coll: Collection, filters=None):
+    match = {'handler': {"$exists": True}, 'from_user': False}
+    if filters:
+        match.update(filters)
+    agg = logs_coll.aggregate([
+        {'$match': match},
+        {"$group": {
+            "_id": "$handler",
+            "first_time": {"$min": '$timestamp'},
+            "last_time": {"$max": '$timestamp'},
+            "response_example": {"$last": '$text'},
+            'messages': {'$sum': 1}
+        }},
+        {"$sort": {'messages': -1}},
     ])
     return list(agg)
 
@@ -160,6 +189,73 @@ def show_session(session_id, coll_name=None):
     device = sess.get('data', {}).get('meta', {}).get('client_id')
     return render_template(
         'session.html', messages=messages, session_id=session_id, device=device, user_id=sess['user_id']
+    )
+
+
+@bp.route('/handlers')
+@bp.route('/<coll_name>/handlers')
+@flask_login.login_required
+def list_handlers(coll_name=None):
+    logs_coll: Collection = get_logs_coll(current_app, current_user, coll_name=coll_name)
+    handlers = find_handlers(logs_coll=logs_coll)
+    return render_template('handlers.html', handlers=handlers)
+
+
+@bp.route('/handler/<handler_name>')
+@bp.route('/<coll_name>/handler/<handler_name>')
+@flask_login.login_required
+def show_handler(handler_name, coll_name=None):
+    logs_coll: Collection = get_logs_coll(current_app, current_user, coll_name=coll_name)
+    page = int(request.args.get('page', 0))
+    page_size = int(request.args.get('page_size', 100))
+    messages = find_messages(
+        logs_coll=logs_coll, filters={'handler': handler_name, 'from_user': False}, time_sort=-1,
+        page=page, page_size=page_size
+    )
+    if not messages:
+        if not page:
+            return f'Handler "{handler_name}" not found', 404
+        return f'Handler "{handler_name}" does not have page {page}', 404
+    prev_url = url_for(
+        'main.show_handler', page=page - 1, handler_name=handler_name, coll_name=coll_name
+    ) if page else None
+    next_url = url_for('main.show_handler', page=page + 1, handler_name=handler_name, coll_name=coll_name)
+    return render_template(
+        'by_handler.html', messages=messages, handler_name=handler_name,
+        prev_url=prev_url, next_url=next_url,
+    )
+
+
+@bp.route('/handler-unique/<handler_name>')
+@bp.route('/<coll_name>/handler-unique/<handler_name>')
+@flask_login.login_required
+def show_handler_unique(handler_name, coll_name=None):
+    logs_coll: Collection = get_logs_coll(current_app, current_user, coll_name=coll_name)
+    page = int(request.args.get('page', 0))
+    page_size = int(request.args.get('page_size', 100))
+    extra = [
+        {"$group": {
+            "_id": '$paired.text',
+            "first_time": {"$min": '$timestamp'},
+            "last_time": {"$max": '$timestamp'},
+            'count': {'$sum': 1}
+        }},
+    ]
+    messages = find_messages(
+        logs_coll=logs_coll, filters={'handler': handler_name, 'from_user': False}, time_sort=-1, extra_pipe=extra,
+        page=page, page_size=page_size, get_pairs=False,
+    )
+    if not messages:
+        if not page:
+            return f'Handler "{handler_name}" not found', 404
+        return f'Handler "{handler_name}" does not have page {page}', 404
+    prev_url = url_for(
+        'main.show_handler', page=page - 1, handler_name=handler_name, coll_name=coll_name
+    ) if page else None
+    next_url = url_for('main.show_handler_unique', page=page + 1, handler_name=handler_name, coll_name=coll_name)
+    return render_template(
+        'by_handler_unique.html', messages=messages, handler_name=handler_name,
+        prev_url=prev_url, next_url=next_url,
     )
 
 
