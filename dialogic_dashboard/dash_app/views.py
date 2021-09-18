@@ -106,6 +106,11 @@ def find_messages(logs_coll: Collection, page=0, page_size=1000, filters=None, t
             m['response_text'] = m['paired']['text'] if m.get('paired') and m['paired'].get('text') else None
             if not m.get('from_user'):
                 m['response_text'], m['text'] = m['text'], m['response_text']
+                m['data_req'] = m['paired'].get('data')
+                m['data_resp'] = m.get('data')
+            else:
+                m['data_req'] = m.get('data')
+                m['data_resp'] = m['paired'].get('data')
             if not m.get('handler') and m['paired'].get('handler'):
                 m['handler'] = m['paired']['handler']
     return messages

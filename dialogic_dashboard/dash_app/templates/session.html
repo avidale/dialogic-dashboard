@@ -16,6 +16,7 @@
     <table class="table">
       <thead>
       <tr>
+          <th>Event</th>
           <th>Request</th>
           <th>Response text</th>
           <th>Time</th>
@@ -25,6 +26,7 @@
       <tbody>
       {% for item in messages %}
       <tr>
+          <td>{{item.data_req.get('request', {}).get('type') or '-'}}</td>
           <td>{{item.text}}</td>
           <td>{{item.response_text}}</td>
           <td>{{item.timestamp}}</td>
