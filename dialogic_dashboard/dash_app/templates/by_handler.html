@@ -25,7 +25,7 @@
       <tbody>
       {% for item in messages %}
       <tr>
-          <td>{{(item.data_req.get('request') or {}).get('type') or ''}}</td>
+          <td>{{item.get('request_type') or ''}}</td>
           <td>{{item.text}}</td>
           <td>{{item.response_text}}</td>
           <td>{{item.timestamp}}</td>
@@ -33,7 +33,7 @@
               <a href="{{ url_for('main.show_session', session_id=item['session_id']) }}">session</a>
               <a href="{{ url_for('main.show_user', user_id=item['user_id']) }}">user</a>
           </td>
-          <td>{{item.data_resp.get('response', {}).get('directives') or ''}}</td>
+          <td>{{item.get('directives') or ''}}</td>
       </tr>
       {% endfor %}
       </tbody>

@@ -113,6 +113,21 @@ def find_messages(logs_coll: Collection, page=0, page_size=1000, filters=None, t
                 m['data_resp'] = m['paired'].get('data')
             if not m.get('handler') and m['paired'].get('handler'):
                 m['handler'] = m['paired']['handler']
+
+    # add request types in Alice messages
+    for m in messages:
+        if not m.get('request_type'):
+            req_data = m.get('data_req')
+            if isinstance(req_data, dict):
+                r = req_data.get('request')
+                if isinstance(r, dict):
+                    m['request_type'] = r.get('type')
+        if not m.get('directives'):
+            resp_data = m.get('data_resp')
+            if isinstance(resp_data, dict):
+                r = resp_data.get('response')
+                if isinstance(r, dict):
+                    m['directives'] = r.get('directives')
     return messages
 
 
@@ -191,7 +206,11 @@ def show_session(session_id, coll_name=None):
     if not messages:
         return f'Session "{session_id}" not found', 404
     sess = messages[0]
-    device = sess.get('data', {}).get('meta', {}).get('client_id')
+    sess_data = sess.get('data')
+    if isinstance(sess_data, dict):
+        device = sess_data.get('meta', {}).get('client_id')
+    else:
+        device = None
     return render_template(
         'session.html', messages=messages, session_id=session_id, device=device, user_id=sess['user_id']
     )
