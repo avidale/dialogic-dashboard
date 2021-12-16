@@ -25,7 +25,7 @@
       <tbody>
       {% for item in messages %}
       <tr>
-          <td>{{item.data_req.get('request', {}).get('type') or ''}}</td>
+          <td>{{(item.data_req.get('request') or {}).get('type') or ''}}</td>
           <td>{{item.text}}</td>
           <td>{{item.response_text}}</td>
           <td>{{item.timestamp}}</td>
