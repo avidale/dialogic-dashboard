@@ -128,6 +128,11 @@ def find_messages(logs_coll: Collection, page=0, page_size=1000, filters=None, t
                 r = resp_data.get('response')
                 if isinstance(r, dict):
                     m['directives'] = r.get('directives')
+
+        if 'session_id' not in m:
+            m['session_id'] = None
+            if isinstance(m['data'], dict):
+                m['session_id'] = m['data'].get('session', {}).get('session_id')
     return messages
 
 
@@ -330,10 +335,11 @@ def show_user_messages(user_id, coll_name=None):
 def search_text(coll_name=None):
     logs_coll: Collection = get_logs_coll(current_app, current_user, coll_name=coll_name)
     query = ''
+    from_user = bool(request.args.get('query_type') != 'res')
     if request.args and request.args.get('query'):
         query = request.args['query']
     if query:
-        messages = find_messages(logs_coll=logs_coll, filters={'$text': {'$search': query}, 'from_user': True})
+        messages = find_messages(logs_coll=logs_coll, filters={'$text': {'$search': query}, 'from_user': from_user})
     else:
         messages = []
     return render_template('search.html', messages=messages, query=query)

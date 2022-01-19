@@ -24,7 +24,7 @@
           <td>{{item.timestamp}}</td>
           <td><a href="{{ url_for('main.show_handler', handler_name=item.handler) }}">{{item.handler}}</a></td>
           <td>
-              <a href="{{ url_for('main.show_session', session_id=item['data']['session']['session_id']) }}">session</a>
+              <a href="{{ url_for('main.show_session', session_id=item.get('session_id')) }}">session</a>
               <a href="{{ url_for('main.show_user', user_id=item['user_id']) }}">user</a>
           </td>
       </tr>

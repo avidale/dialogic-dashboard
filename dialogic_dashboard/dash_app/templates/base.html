@@ -37,8 +37,12 @@
       </ul>
       <form class="navbar-form navbar-left" action="{{ url_for('main.search_text') }}" method="GET">
         <div class="form-group">
-          <input type="text" class="form-control" placeholder="Search" name="query">
+          <input type="text" class="form-control" placeholder="Search" name="query" value="{{ request.args.get('query', '') }}">
         </div>
+        <select name="query_type" class="form-select" aria-label="select example">
+            <option value="req">in request</option>
+            <option value="res" {% if request.args.get('query_type') == 'res' %} selected {% endif %}>in response</option>
+        </select>
         <button type="submit" class="btn btn-default">Search</button>
       </form>
       <ul class="nav navbar-nav navbar-right">
